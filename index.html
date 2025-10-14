@@ -78,6 +78,7 @@
       const [currentMonthlyExpenses, setCurrentMonthlyExpenses] = useState('');
       const [cashReserves, setCashReserves] = useState('');
       const [timeHorizon, setTimeHorizon] = useState('6');
+      const [showRestoreMessage, setShowRestoreMessage] = useState(false);
 
       const [revenueStreams, setRevenueStreams] = useState([
         { name: 'Advertising', current: '', target: '', timeline: '3' },
@@ -93,6 +94,62 @@
       const [newInitiatives, setNewInitiatives] = useState([
         { initiative: '', estimatedRevenue: '', cost: '', timeline: '3' }
       ]);
+
+      // Load saved data on mount
+      React.useEffect(() => {
+        const savedData = localStorage.getItem('cashRunwayWorksheet');
+        if (savedData) {
+          try {
+            const parsed = JSON.parse(savedData);
+            setOrgName(parsed.orgName || '');
+            setCurrentMonthlyRevenue(parsed.currentMonthlyRevenue || '');
+            setCurrentMonthlyExpenses(parsed.currentMonthlyExpenses || '');
+            setCashReserves(parsed.cashReserves || '');
+            setTimeHorizon(parsed.timeHorizon || '6');
+            setRevenueStreams(parsed.revenueStreams || revenueStreams);
+            setCostCutting(parsed.costCutting || costCutting);
+            setNewInitiatives(parsed.newInitiatives || newInitiatives);
+            setShowRestoreMessage(true);
+            setTimeout(() => setShowRestoreMessage(false), 5000);
+          } catch (e) {
+            console.error('Error loading saved data:', e);
+          }
+        }
+      }, []);
+
+      // Auto-save whenever data changes
+      React.useEffect(() => {
+        const dataToSave = {
+          orgName,
+          currentMonthlyRevenue,
+          currentMonthlyExpenses,
+          cashReserves,
+          timeHorizon,
+          revenueStreams,
+          costCutting,
+          newInitiatives
+        };
+        localStorage.setItem('cashRunwayWorksheet', JSON.stringify(dataToSave));
+      }, [orgName, currentMonthlyRevenue, currentMonthlyExpenses, cashReserves, timeHorizon, revenueStreams, costCutting, newInitiatives]);
+
+      const clearAllData = () => {
+        if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
+          localStorage.removeItem('cashRunwayWorksheet');
+          setOrgName('');
+          setCurrentMonthlyRevenue('');
+          setCurrentMonthlyExpenses('');
+          setCashReserves('');
+          setTimeHorizon('6');
+          setRevenueStreams([
+            { name: 'Advertising', current: '', target: '', timeline: '3' },
+            { name: 'Subscriptions/Memberships', current: '', target: '', timeline: '3' },
+            { name: 'Events', current: '', target: '', timeline: '3' },
+            { name: 'Grants/Donations', current: '', target: '', timeline: '3' }
+          ]);
+          setCostCutting([{ item: '', monthlySavings: '', impact: 'low', timeline: '1' }]);
+          setNewInitiatives([{ initiative: '', estimatedRevenue: '', cost: '', timeline: '3' }]);
+        }
+      };
 
       const addRevenueStream = () => {
         setRevenueStreams([...revenueStreams, { name: '', current: '', target: '', timeline: '3' }]);
@@ -234,8 +291,20 @@
                 90-Day Cash Runway Worksheet
               </h1>
               <p className="text-gray-600">Strategic planning for short-term financial sustainability</p>
+              {showRestoreMessage && (
+                <div className="mt-2 text-sm text-green-600 font-medium">
+                  ✓ Data restored from your last session
+                </div>
+              )}
             </div>
             <div className="flex gap-2 no-print">
+              <button
+                onClick={clearAllData}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                title="Clear all data and start fresh"
+              >
+                Clear All
+              </button>
               <button
                 onClick={printPDF}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -713,6 +782,9 @@
 
         <div className="text-center text-gray-500 text-sm mt-6">
           90-Day Cash Runway Worksheet for local news organizations
+          <div className="mt-1 text-xs">
+            💾 Your progress is automatically saved in this browser
+          </div>
         </div>
       </div>
     </div>
