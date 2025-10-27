@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>90-Day Cash Runway Worksheet</title>
+  <title>Cash Runway Worksheet</title>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -109,10 +109,10 @@
       const [isSyncing, setIsSyncing] = useState(false);
 
       const [revenueStreams, setRevenueStreams] = useState([
-        { name: 'Advertising', current: '', target: '', timeline: '3' },
-        { name: 'Subscriptions/Memberships', current: '', target: '', timeline: '3' },
-        { name: 'Events', current: '', target: '', timeline: '3' },
-        { name: 'Grants/Donations', current: '', target: '', timeline: '3' }
+        { name: '', current: '', target: '', timeline: '3' },
+        { name: '', current: '', target: '', timeline: '3' },
+        { name: '', current: '', target: '', timeline: '3' },
+        { name: '', current: '', target: '', timeline: '3' }
       ]);
 
       const [costCutting, setCostCutting] = useState([
@@ -177,10 +177,10 @@
           setTimeHorizon('6');
           setGoogleSheetId('');
           setRevenueStreams([
-            { name: 'Advertising', current: '', target: '', timeline: '3' },
-            { name: 'Subscriptions/Memberships', current: '', target: '', timeline: '3' },
-            { name: 'Events', current: '', target: '', timeline: '3' },
-            { name: 'Grants/Donations', current: '', target: '', timeline: '3' }
+            { name: '', current: '', target: '', timeline: '3' },
+            { name: '', current: '', target: '', timeline: '3' },
+            { name: '', current: '', target: '', timeline: '3' },
+            { name: '', current: '', target: '', timeline: '3' }
           ]);
           setCostCutting([{ item: '', monthlySavings: '', impact: 'low', timeline: '1' }]);
           setNewInitiatives([{ initiative: '', estimatedRevenue: '', cost: '', timeline: '3' }]);
@@ -190,7 +190,7 @@
 
       const createNewGoogleSheet = async () => {
         if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
-          alert('Please configure your Apps Script URL in the HTML file first.');
+          alert('Apps Script not configured. Please add your Apps Script URL to the HTML file.');
           return;
         }
         
@@ -199,22 +199,30 @@
         
         try {
           const response = await fetch(`${APPS_SCRIPT_URL}?action=create&orgName=${encodeURIComponent(orgName || 'Unnamed Organization')}`);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
           const data = await response.json();
           
           if (data.success) {
             setGoogleSheetId(data.sheetId);
-            setSyncStatus('✓ Google Sheet created! Syncing data...');
+            setSyncStatus('✓ Google Sheet created! Syncing initial data...');
             
             // Now sync the current data to the sheet
-            await syncToGoogleSheets();
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second for sheet to be ready
+            await syncToGoogleSheets(true);
             
-            setSyncStatus(`✓ Connected to Google Sheets`);
-            setTimeout(() => setSyncStatus(''), 3000);
+            setSyncStatus(`✓ Connected to Google Sheets! Click "Open Sheet" to view.`);
+            setTimeout(() => setSyncStatus(''), 5000);
           } else {
-            setSyncStatus('✗ Error: ' + (data.error || 'Unknown error'));
+            setSyncStatus('✗ Error creating sheet: ' + (data.error || 'Unknown error'));
+            console.error('Sheet creation error:', data);
           }
         } catch (error) {
-          setSyncStatus('✗ Error creating sheet: ' + error.message);
+          setSyncStatus('✗ Error: ' + error.message);
+          console.error('Network error:', error);
         }
         
         setIsSyncing(false);
@@ -270,14 +278,14 @@
             newInitiatives
           };
           
-          const response = await fetch(APPS_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload)
+          // Use GET with data in URL parameters (better CORS support)
+          const params = new URLSearchParams({
+            action: 'save',
+            sheetId: googleSheetId,
+            data: JSON.stringify(payload)
           });
           
+          const response = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
           const data = await response.json();
           
           if (data.success) {
@@ -289,6 +297,7 @@
             if (!silent) setSyncStatus('✗ Sync error: ' + (data.error || 'Unknown error'));
           }
         } catch (error) {
+          console.error('Sync error:', error);
           if (!silent) setSyncStatus('✗ Sync error: ' + error.message);
         }
         
@@ -554,7 +563,7 @@
           <div className="flex justify-between items-start mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                90-Day Cash Runway Worksheet
+                Cash Runway Worksheet
               </h1>
               <p className="text-gray-600">Strategic planning for short-term financial sustainability</p>
               {showRestoreMessage && (
@@ -623,6 +632,10 @@
           {/* Current Financial Snapshot */}
           <div className="border-b pb-6 mb-6">
             <h2 className="text-xl font-semibold mb-4">Current Financial Snapshot</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              <strong>💡 Tip for variable revenue:</strong> If your monthly revenue fluctuates significantly, use an average of the last 3-6 months. 
+              For seasonal organizations, consider using your typical "low season" revenue as a conservative estimate.
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1047,7 +1060,7 @@
         </div>
 
         <div className="text-center text-gray-500 text-sm mt-6">
-          90-Day Cash Runway Worksheet for local news organizations
+          Cash Runway Worksheet for local news organizations
           <div className="mt-1 text-xs">
             💾 Your progress is automatically saved in this browser
             {googleSheetId && ' • ☁️ Synced with Google Sheets'}
