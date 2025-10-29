@@ -430,8 +430,13 @@
         const expenses = parseFloat(currentMonthlyExpenses) || 0;
         const reserves = parseFloat(cashReserves) || 0;
         
+        // Safety check for arrays
+        const streams = revenueStreams || [];
+        const cuts = costCutting || [];
+        const initiatives = newInitiatives || [];
+        
         // Only include items where timeline <= targetMonth
-        const activeRevenueIncrease = revenueStreams.reduce((sum, stream) => {
+        const activeRevenueIncrease = streams.reduce((sum, stream) => {
           const timeline = parseFloat(stream.timeline) || 0;
           if (timeline <= targetMonth) {
             return sum + ((parseFloat(stream.target) || 0) - (parseFloat(stream.current) || 0));
@@ -439,7 +444,7 @@
           return sum;
         }, 0);
         
-        const activeCostSavings = costCutting.reduce((sum, cut) => {
+        const activeCostSavings = cuts.reduce((sum, cut) => {
           const timeline = parseFloat(cut.timeline) || 0;
           if (timeline <= targetMonth) {
             return sum + (parseFloat(cut.monthlySavings) || 0);
@@ -447,7 +452,7 @@
           return sum;
         }, 0);
         
-        const activeInitiativeNet = newInitiatives.reduce((sum, init) => {
+        const activeInitiativeNet = initiatives.reduce((sum, init) => {
           const timeline = parseFloat(init.timeline) || 0;
           if (timeline <= targetMonth) {
             return sum + ((parseFloat(init.estimatedRevenue) || 0) - (parseFloat(init.cost) || 0));
@@ -459,41 +464,35 @@
         const projectedExpenses = expenses - activeCostSavings;
         const monthlyNet = projectedRevenue - projectedExpenses;
         
-        // Calculate runway at this point
-        // Sum up deficits from month 0 to targetMonth
-        let cumulativeDeficit = 0;
-        for (let m = 0; m <= targetMonth; m++) {
-          const monthProjection = calculateProjectionAtMonth(m);
-          if (monthProjection.monthlyNet < 0) {
-            cumulativeDeficit += Math.abs(monthProjection.monthlyNet);
-          }
-        }
-        
-        const remainingReserves = reserves - cumulativeDeficit;
-        const runwayMonths = monthlyNet < 0 ? (remainingReserves / Math.abs(monthlyNet)) : Infinity;
+        // Simple runway calculation based on current state at this month
+        const runwayMonths = monthlyNet < 0 ? (reserves / Math.abs(monthlyNet)) : Infinity;
         
         return {
           revenue: projectedRevenue,
           expenses: projectedExpenses,
           monthlyNet,
           runwayMonths: runwayMonths > 0 ? runwayMonths : 0,
-          remainingReserves: remainingReserves > 0 ? remainingReserves : 0,
           itemsActive: {
-            revenueStreams: revenueStreams.filter(s => (parseFloat(s.timeline) || 0) <= targetMonth).length,
-            costCuts: costCutting.filter(c => (parseFloat(c.timeline) || 0) <= targetMonth).length,
-            initiatives: newInitiatives.filter(i => (parseFloat(i.timeline) || 0) <= targetMonth).length
+            revenueStreams: streams.filter(s => (parseFloat(s.timeline) || 0) <= targetMonth).length,
+            costCuts: cuts.filter(c => (parseFloat(c.timeline) || 0) <= targetMonth).length,
+            initiatives: initiatives.filter(i => (parseFloat(i.timeline) || 0) <= targetMonth).length
           }
         };
       };
 
       const findBreakevenMonth = () => {
-        for (let month = 0; month <= 24; month++) {
-          const projection = calculateProjectionAtMonth(month);
-          if (projection.monthlyNet >= 0) {
-            return month;
+        try {
+          for (let month = 0; month <= 24; month++) {
+            const projection = calculateProjectionAtMonth(month);
+            if (projection.monthlyNet >= 0) {
+              return month;
+            }
           }
+          return null; // Never reaches breakeven in 24 months
+        } catch (error) {
+          console.error('Error in findBreakevenMonth:', error);
+          return null;
         }
-        return null; // Never reaches breakeven in 24 months
       };
 
       const metrics = calculateMetrics();
