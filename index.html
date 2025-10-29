@@ -435,10 +435,11 @@
         const cuts = costCutting || [];
         const initiatives = newInitiatives || [];
         
-        // Only include items where timeline <= targetMonth
+        // Only include items where timeline <= targetMonth AND has meaningful data
         const activeRevenueIncrease = streams.reduce((sum, stream) => {
           const timeline = parseFloat(stream.timeline) || 0;
-          if (timeline <= targetMonth) {
+          const hasData = stream.name && (stream.current || stream.target);
+          if (timeline <= targetMonth && hasData) {
             return sum + ((parseFloat(stream.target) || 0) - (parseFloat(stream.current) || 0));
           }
           return sum;
@@ -446,7 +447,8 @@
         
         const activeCostSavings = cuts.reduce((sum, cut) => {
           const timeline = parseFloat(cut.timeline) || 0;
-          if (timeline <= targetMonth) {
+          const hasData = cut.item && cut.monthlySavings;
+          if (timeline <= targetMonth && hasData) {
             return sum + (parseFloat(cut.monthlySavings) || 0);
           }
           return sum;
@@ -454,7 +456,8 @@
         
         const activeInitiativeNet = initiatives.reduce((sum, init) => {
           const timeline = parseFloat(init.timeline) || 0;
-          if (timeline <= targetMonth) {
+          const hasData = init.initiative && (init.estimatedRevenue || init.cost);
+          if (timeline <= targetMonth && hasData) {
             return sum + ((parseFloat(init.estimatedRevenue) || 0) - (parseFloat(init.cost) || 0));
           }
           return sum;
@@ -473,9 +476,9 @@
           monthlyNet,
           runwayMonths: runwayMonths > 0 ? runwayMonths : 0,
           itemsActive: {
-            revenueStreams: streams.filter(s => (parseFloat(s.timeline) || 0) <= targetMonth).length,
-            costCuts: cuts.filter(c => (parseFloat(c.timeline) || 0) <= targetMonth).length,
-            initiatives: initiatives.filter(i => (parseFloat(i.timeline) || 0) <= targetMonth).length
+            revenueStreams: streams.filter(s => s.name && (s.current || s.target) && (parseFloat(s.timeline) || 0) <= targetMonth).length,
+            costCuts: cuts.filter(c => c.item && c.monthlySavings && (parseFloat(c.timeline) || 0) <= targetMonth).length,
+            initiatives: initiatives.filter(i => i.initiative && (i.estimatedRevenue || i.cost) && (parseFloat(i.timeline) || 0) <= targetMonth).length
           }
         };
       };
@@ -493,6 +496,14 @@
           console.error('Error in findBreakevenMonth:', error);
           return null;
         }
+      };
+
+      const hasAnyData = () => {
+        const hasBasicData = currentMonthlyRevenue || currentMonthlyExpenses || cashReserves;
+        const hasRevenueData = revenueStreams.some(s => s.name && (s.current || s.target));
+        const hasCostData = costCutting.some(c => c.item && c.monthlySavings);
+        const hasInitiativeData = newInitiatives.some(i => i.initiative && (i.estimatedRevenue || i.cost));
+        return hasBasicData || hasRevenueData || hasCostData || hasInitiativeData;
       };
 
       const metrics = calculateMetrics();
@@ -855,6 +866,17 @@
             </div>
             
             {(() => {
+              if (!hasAnyData()) {
+                return (
+                  <div className="mt-4 bg-blue-100 border border-blue-300 rounded-lg p-3 flex items-start gap-2">
+                    <AlertCircle className="text-blue-600 mt-0.5 flex-shrink-0" size={20} />
+                    <div className="text-sm text-blue-800">
+                      Enter your current financial data above to see timeline projections and break-even analysis.
+                    </div>
+                  </div>
+                );
+              }
+              
               const breakevenMonth = findBreakevenMonth();
               if (breakevenMonth === null) {
                 return (
