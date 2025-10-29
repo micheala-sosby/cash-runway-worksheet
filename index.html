@@ -162,7 +162,7 @@
         localStorage.setItem('cashRunwayWorksheet', JSON.stringify(dataToSave));
         
         // Auto-sync to Google Sheets if connected
-        if (googleSheetId && APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL_HERE') {
+        if (googleSheetId && APPS_SCRIPT_URL !== 'https://script.google.com/macros/s/AKfycbwxB8Y_a3d50DRclddd58oWmzBWh7rrFIa_cylTY6OjmkciZ8j0bYpNrXeNjyVEDYdl/exec') {
           syncToGoogleSheets(true); // silent sync
         }
       }, [orgName, currentMonthlyRevenue, currentMonthlyExpenses, cashReserves, timeHorizon, revenueStreams, costCutting, newInitiatives]);
@@ -189,7 +189,7 @@
       };
 
       const createNewGoogleSheet = async () => {
-        if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+        if (APPS_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbwxB8Y_a3d50DRclddd58oWmzBWh7rrFIa_cylTY6OjmkciZ8j0bYpNrXeNjyVEDYdl/exec') {
           alert('Apps Script not configured. Please add your Apps Script URL to the HTML file.');
           return;
         }
@@ -255,7 +255,7 @@
           return;
         }
         
-        if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+        if (APPS_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbwxB8Y_a3d50DRclddd58oWmzBWh7rrFIa_cylTY6OjmkciZ8j0bYpNrXeNjyVEDYdl/exec') {
           if (!silent) alert('Please configure your Apps Script URL in the HTML file first.');
           return;
         }
@@ -310,7 +310,7 @@
           return;
         }
         
-        if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+        if (APPS_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbwxB8Y_a3d50DRclddd58oWmzBWh7rrFIa_cylTY6OjmkciZ8j0bYpNrXeNjyVEDYdl/exec') {
           alert('Please configure your Apps Script URL in the HTML file first.');
           return;
         }
